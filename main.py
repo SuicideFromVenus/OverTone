@@ -28,21 +28,21 @@ def Log(text : str):
 
 async def create_symlink(src : str, dst : str):
     if os.path.exists(dst):
-        Log("Audio Loader - {} symlink already exists".format(dst))
+        Log("OverTone - {} symlink already exists".format(dst))
         return
     os.symlink(src, dst, True)
-    Log("Audio Loader - Symlink created".format(dst))
+    Log("OverTone - Symlink created".format(dst))
 
 async def create_folder(path):
     if os.path.exists(path):
-        Log("Audio Loader - {} folder already exists".format(path))
+        Log("OverTone - {} folder already exists".format(path))
         return
     os.mkdir(path)
-    Log("Audio Loader - {} folder created".format(path))
+    Log("OverTone - {} folder created".format(path))
 
 async def create_config(path):
     if os.path.exists(path):
-        Log("Audio Loader - Config file already exists at {}".format(path))
+        Log("OverTone - Config file already exists at {}".format(path))
         return
     with open(path, 'w') as fp:
         fp.write(starter_config_string)
@@ -76,7 +76,7 @@ class Pack:
 
 
         if (AUDIO_LOADER_VERSION < self.require):
-            raise Exception("Audio Loader - {} requires Audio Loader version {} but only version {} is installed".format(self.name, self.require, AUDIO_LOADER_VERSION))
+            raise Exception("OverTone - {} requires OverTone version {} but only version {} is installed".format(self.name, self.require, AUDIO_LOADER_VERSION))
 
         self.packPath = packPath
         self.truncatedPackPath = truncatedPackPath
@@ -127,9 +127,9 @@ class Plugin:
     async def get_config(self) -> object:
         configPath = os.path.join(get_pack_path(), 'config.json')
 
-        Log("Audio Loader - Fetching config file at {}".format(configPath))
+        Log("OverTone - Fetching config file at {}".format(configPath))
         if (os.path.exists(configPath)):
-            Log("Audio Loader - Found config file")
+            Log("OverTone - Found config file")
             with open(configPath, "r") as fp:
                 data = json.load(fp)
                 self.config = data
@@ -138,16 +138,16 @@ class Plugin:
     async def set_config(self, configObj: object):
         configPath = os.path.join(get_pack_path(), 'config.json')
 
-        Log("Audio Loader - Setting config file at {}".format(configPath))
+        Log("OverTone - Setting config file at {}".format(configPath))
         if (os.path.exists(configPath)):
-            Log("Audio Loader - Found config file")
+            Log("OverTone - Found config file")
             # Merge into the existing config so keys the caller didn't send are never lost
             merged = dict(starter_config_data)
             try:
                 with open(configPath, "r") as fp:
                     merged.update(json.load(fp))
             except Exception as e:
-                Log("Audio Loader - Could not read existing config, rewriting it: {}".format(e))
+                Log("OverTone - Could not read existing config, rewriting it: {}".format(e))
             merged.update(configObj)
             self.config = merged
             json_string = json.dumps(merged)
@@ -191,7 +191,7 @@ class Plugin:
             if not os.path.exists(packDataPath):
                 continue
 
-            Log("Audio Loader - Analyzing sound pack {}".format(p))
+            Log("OverTone - Analyzing sound pack {}".format(p))
 
             try:
                 with open(packDataPath, "r") as f:
@@ -201,9 +201,9 @@ class Plugin:
 
                 if (packData.name not in [p.name for p in self.soundPacks]):
                     self.soundPacks.append(packData)
-                    Log("Audio Loader - Sound pack {} added".format(packData.name))
+                    Log("OverTone - Sound pack {} added".format(packData.name))
             except Exception as e:
-                Log("Audio Loader - Error parsing sound pack: {}".format(e))
+                Log("OverTone - Error parsing sound pack: {}".format(e))
 
     async def store_read(self, key : str) -> str:
         return util_store_read(key)
@@ -217,7 +217,7 @@ class Plugin:
 
         configPath = os.path.join(get_pack_path(), 'config.json')
 
-        Log("Audio Loader - Finding sound packs...")
+        Log("OverTone - Finding sound packs...")
         self.soundPacks = []
 
         if (not os.path.exists(packsPath)):
@@ -233,14 +233,14 @@ class Plugin:
         await self.get_config(self)
 
 
-        Log("Audio Loader - Config existing is {}".format(os.path.exists(configPath)))
+        Log("OverTone - Config existing is {}".format(os.path.exists(configPath)))
 
 
     async def _main(self):
         self.soundPacks = []
         self.config = dict(starter_config_data)
 
-        Log("Initializing Audio Loader...")
+        Log("Initializing OverTone...")
         await self._load(self)
-        Log("Audio Loader initialized.")
+        Log("OverTone initialized.")
         Log(str(self.soundPacks))
