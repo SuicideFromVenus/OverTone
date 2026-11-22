@@ -18,7 +18,7 @@ A fork of Audio Loader built to make menu music great,<br>and the whole plugin n
 
 ## ✨ Why OverTone exists
 
-OverTone is a [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) plugin that swaps Steam's UI sounds for custom packs and plays music in the menus. It's a fork of [Audio Loader](https://github.com/DeckThemes/SDH-AudioLoader) with two goals: **a better music experience**, and **a pile of quality of life improvements** that make everything feel cleaner day to day.
+OverTone is a [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) plugin that swaps Steam's UI sounds for custom packs and plays music in the menus. It's a fork of [Audio Loader](https://github.com/DeckThemes/SDH-AudioLoader) with two goals: **a better music experience**, and **a pile of quality-of-life improvements** that make everything feel cleaner day to day.
 
 > [!NOTE]
 > None of this exists without **EMERALD0874** and **Beebles**, who made the original plugin, the pack format and the Pack Manager. OverTone stays compatible with Audio Loader packs, and your packs and settings in `~/homebrew/sounds` are read as-is.
@@ -188,7 +188,7 @@ Settings live in `~/homebrew/sounds/config.json`. They're normally changed from 
 | `random_sound_on_launch` | `false` | Random sound pack at launch |
 | `random_music_on_launch` | `false` | Random song at launch |
 
-The fade lengths are `FADE_OUT_MS` and `FADE_IN_MS` at the top of `src/audioPlayers/musicPlayer.ts`.
+Fades last 1.5 seconds and are the same going out and coming in. To change that, edit `FADE_MS` at the top of `src/audioPlayers/musicPlayer.ts`.
 
 </details>
 
