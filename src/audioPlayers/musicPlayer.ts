@@ -16,9 +16,20 @@ let errorStreak = 0;
 // False while Steam is only open in its desktop UI (not Big Picture / Gaming Mode)
 let gamepadUI = true;
 
+// True when WE paused the music (game launch, desktop UI switch), so the next resume should fade in.
+// Stays false at plugin load / track changes, so those start at full volume with no fade.
+let suspendedByUs = false;
+let fadeTimer: number | null = null;
+
 const HISTORY_LIMIT = 50;
 const RESTART_THRESHOLD_SECONDS = 3;
 const RETRY_DELAY_MS = 2000;
+const FADE_OUT_MS = 500;
+const FADE_IN_MS = 800;
+const FADE_STEP_MS = 25;
+// A timer gap this long means the device was asleep (fallback for when Steam's resume event isn't available)
+const SLEEP_GAP_MS = 20000;
+const WAKE_RETRY_LIMIT = 6;
 
 export function initMusicPlayer(state: GlobalState) {
   gs = state;
@@ -30,13 +41,112 @@ const keyOf = (t: Track) => `${t.pack}::${t.file}`;
 const audioEl = (): HTMLAudioElement | null => st().menuMusic;
 const canPlay = () => gamepadUI && st().gamesRunning.length === 0;
 
-// Pauses the music while Steam is in the desktop UI and resumes it when Big Picture / Gaming Mode returns
+// ---------------------------------------------------------------- fading
+
+function cancelFade() {
+  if (fadeTimer !== null) {
+    clearInterval(fadeTimer);
+    fadeTimer = null;
+  }
+}
+
+// Ramps the element between silent (0) and the user's music volume (1) over `ms`.
+// Works from wherever the volume currently is, so reversing a fade mid-way is smooth.
+function fadeTo(a: HTMLAudioElement, target: 0 | 1, ms: number, done?: () => void) {
+  cancelFade();
+  const vol = () => st().musicVolume;
+  const startLevel = vol() > 0 ? Math.min(1, a.volume / vol()) : target;
+  const t0 = performance.now();
+  fadeTimer = window.setInterval(() => {
+    const p = Math.min(1, (performance.now() - t0) / ms);
+    // musicVolume is re-read each step, so moving the slider during a fade still works
+    a.volume = Math.max(0, Math.min(1, vol() * (startLevel + (target - startLevel) * p)));
+    if (p >= 1) {
+      cancelFade();
+      done?.();
+    }
+  }, FADE_STEP_MS);
+}
+
+function fadeOutAndPause(a: HTMLAudioElement) {
+  if (a.paused) return;
+  suspendedByUs = true;
+  fadeTo(a, 0, FADE_OUT_MS, () => {
+    a.pause();
+    a.volume = st().musicVolume; // restore, so a manual play later isn't silent
+  });
+}
+
+function fadeInAndPlay(a: HTMLAudioElement): Promise<void> {
+  suspendedByUs = false;
+  if (!a.paused) {
+    // Still mid fade-out: just turn it back up
+    fadeTo(a, 1, FADE_IN_MS);
+    return Promise.resolve();
+  }
+  cancelFade();
+  a.volume = 0;
+  return a
+  .play()
+  .then(() => {
+    if (audioEl() === a) fadeTo(a, 1, FADE_IN_MS);
+  })
+  .catch((e) => {
+    a.volume = st().musicVolume;
+    throw e;
+  });
+}
+
+// Resumes after a game closed / Gaming Mode returned. Fades in only if we were the ones who paused it.
+function resumeMusic() {
+  const a = audioEl();
+  if (!a || userPaused || !canPlay()) return;
+  if (suspendedByUs) fadeInAndPlay(a).catch(() => {});
+  else if (a.paused) a.play().catch(() => {});
+}
+
+// Fades the music out while Steam is in the desktop UI and back in when Big Picture / Gaming Mode returns
 export function setGamepadUI(active: boolean) {
   gamepadUI = active;
   const a = audioEl();
   if (!a) return;
-  if (!active) a.pause();
-  else if (!userPaused && st().gamesRunning.length === 0) a.play().catch(() => {});
+  if (!active) fadeOutAndPause(a);
+  else resumeMusic();
+}
+
+// After the device wakes from sleep the audio element is left paused and nothing restarts it.
+// Starts it again (unless the user paused it themselves or a game is running), retrying a few
+// times in case the audio device isn't ready yet.
+export function resumeAfterSleep() {
+  let tries = 0;
+  const attempt = () => {
+    const a = audioEl();
+    if (!a || userPaused || !canPlay() || !a.paused) return;
+    if (a.error) a.load();
+    fadeInAndPlay(a).catch(() => {
+      if (++tries < WAKE_RETRY_LIMIT) setTimeout(attempt, 1000);
+    });
+  };
+  setTimeout(attempt, 500);
+}
+
+// Listens for wake-from-sleep. Returns a function that stops listening.
+export function watchForSleep(): () => void {
+  // System isn't in our SteamClient typings, hence the any
+  const reg = (SteamClient as any).System?.RegisterForOnResumeFromSuspend?.(() => resumeAfterSleep()) as
+  | RegisteredEvent
+  | undefined;
+  // Fallback: timers freeze while asleep, so a big jump in the clock means we just woke up
+  let last = Date.now();
+  const timer = window.setInterval(() => {
+    const now = Date.now();
+    if (now - last > SLEEP_GAP_MS) resumeAfterSleep();
+    last = now;
+  }, 5000);
+  return () => {
+    reg?.unregister();
+    clearInterval(timer);
+  };
 }
 
 // ---------------------------------------------------------------- queue
@@ -88,6 +198,8 @@ function shuffled<T>(items: T[]): T[] {
 // ---------------------------------------------------------------- playback core
 
 function disposeAudio() {
+  cancelFade();
+  suspendedByUs = false;
   const a = audioEl();
   if (a) {
     a.onended = null;
@@ -150,7 +262,7 @@ function playTrack(track: Track, withIntro: boolean) {
     handleEnded();
   };
   a.onerror = () => {
-    console.warn("Audio Loader: could not play", a.src);
+    console.warn("OverTone: could not play", a.src);
     if (phase === "intro") {
       // A missing intro shouldn't stop the song itself from playing
       startMainPhase(a, mainSrc);
@@ -162,9 +274,9 @@ function playTrack(track: Track, withIntro: boolean) {
       setTimeout(() => {
         if (audioEl() !== a) return;
         a.load();
-        if (canPlay()) a.play().catch((e) => console.warn("Audio Loader: play() rejected", e));
+        if (canPlay()) a.play().catch((e) => console.warn("OverTone: play() rejected", e));
       }, RETRY_DELAY_MS);
-      return;
+        return;
     }
     errorStreak++;
     // Skip a broken song, but give up once every song in a row has failed
@@ -183,7 +295,10 @@ function playTrack(track: Track, withIntro: boolean) {
 
   // While a game is running the music stays loaded but paused; resumeAfterGame() starts it.
   if (canPlay()) {
-    a.play().catch((e) => console.warn("Audio Loader: play() rejected", e));
+    a.play().catch((e) => console.warn("OverTone: play() rejected", e));
+  } else {
+    // Loaded while a game runs / desktop UI: fade in when it's finally allowed to play
+    suspendedByUs = true;
   }
 }
 
@@ -191,7 +306,7 @@ function startMainPhase(a: HTMLAudioElement, mainSrc: string) {
   phase = "main";
   a.src = mainSrc;
   a.loop = st().musicRepeat === "one";
-  a.play().catch((e) => console.warn("Audio Loader: play() rejected", e));
+  a.play().catch((e) => console.warn("OverTone: play() rejected", e));
 }
 
 const packChanged = (next: Track) => st().currentTrack?.pack !== next.pack;
@@ -344,6 +459,9 @@ export function togglePlayPause() {
     startCurrent();
     return;
   }
+  cancelFade();
+  suspendedByUs = false;
+  a.volume = st().musicVolume; // in case a fade was interrupted
   if (a.paused) {
     userPaused = false;
     if (canPlay()) a.play().catch(() => {});
@@ -373,15 +491,16 @@ export function toggleRepeat() {
 export function setMusicVolume(value: number) {
   set("musicVolume", value);
   const a = audioEl();
-  if (a) a.volume = value;
+  // During a fade the fade itself follows musicVolume, so don't fight it
+  if (a && fadeTimer === null) a.volume = value;
   saveConfig();
 }
 
 export function pauseForGame() {
-  audioEl()?.pause();
+  const a = audioEl();
+  if (a) fadeOutAndPause(a);
 }
 
 export function resumeAfterGame() {
-  const a = audioEl();
-  if (a && !userPaused && gamepadUI) a.play().catch(() => {});
+  resumeMusic();
 }
