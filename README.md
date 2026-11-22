@@ -6,7 +6,7 @@
 
 A fork of Audio Loader built to make menu music great,<br>and the whole plugin nicer to live with.
 
-[![Release](https://img.shields.io/github/v/release/SuicideFromVenus/OverTone?style=for-the-badge&color=00f0ff&labelColor=0d0221)](https://github.com/SuicideFromVenus/OverTone/releases/latest)
+[![Release](https://img.shields.io/badge/release-v1.5-c3006b?style=for-the-badge&labelColor=0d0221)](https://github.com/SuicideFromVenus/OverTone/releases/latest)
 [![Decky Loader](https://img.shields.io/badge/Decky_Loader-plugin-ff2bd6?style=for-the-badge&labelColor=0d0221)](https://github.com/SteamDeckHomebrew/decky-loader)
 [![License](https://img.shields.io/badge/license-MIT-8a2be2?style=for-the-badge&labelColor=0d0221)](LICENSE)
 
