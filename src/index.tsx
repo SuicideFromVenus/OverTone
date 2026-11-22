@@ -45,6 +45,7 @@ import {
   startRandomMusic,
   stopMusic,
   togglePlayPause,
+  watchForSleep,
 } from "./audioPlayers";
 import { saveConfig, setConfigState } from "./config";
 import { AudioParent } from "./gamepadAudioFinder";
@@ -121,7 +122,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({}) => {
     return (
       <PanelSectionRow>
       <span>
-      AudioLoader failed to initialize, try reloading, and if that doesn't work, try restarting
+      OverTone failed to initialize, try reloading, and if that doesn't work, try restarting
       your deck.
       </span>
       </PanelSectionRow>
@@ -411,7 +412,7 @@ export default definePlugin((serverApi: ServerAPI) => {
         setGlobalState("gainNode", gainNode);
         return gainNode;
       } catch (e) {
-        console.log("Audio Loader could not set gain node for sound effect volume", e);
+        console.log("OverTone could not set gain node for sound effect volume", e);
       }
       return null;
     }
@@ -527,6 +528,9 @@ export default definePlugin((serverApi: ServerAPI) => {
     setGamepadUI(mode === 4);
   });
 
+  // Restarts the music after the device wakes from sleep
+  const stopSleepWatch = watchForSleep();
+
   serverApi.routerHook.addRoute("/audiopack-manager", () => (
     <GlobalStateContextProvider globalStateClass={state}>
     <PackManagerRouter />
@@ -540,7 +544,7 @@ export default definePlugin((serverApi: ServerAPI) => {
   ));
 
   return {
-    title: <div className={staticClasses.Title}>Audio Loader</div>,
+    title: <div className={staticClasses.Title}>OverTone</div>,
     content: (
       <GlobalStateContextProvider globalStateClass={state}>
       <Content serverAPI={serverApi} />
@@ -554,6 +558,7 @@ export default definePlugin((serverApi: ServerAPI) => {
       volumePatchInstance.unpatch();
       AppStateRegistrar.unregister();
       UIModeRegistrar?.unregister();
+      stopSleepWatch();
     },
   };
 });
