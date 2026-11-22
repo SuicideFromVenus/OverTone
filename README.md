@@ -1,117 +1,107 @@
-# Audio Loader
+<div align="center">
 
-A plugin for the [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) that replaces Steam UI sounds and plays music in the menus.
+# 🎧 OverTone
 
-# Overview
+### Your Steam menus deserve a soundtrack.
 
-Audio Loader searches every folder in `~/homebrew/sounds` for a `pack.json` file describing a sound pack or music pack. Users can install packs from the curated Pack Manager while connected to the internet, or by manually adding folders (not recommended).
+A fork of Audio Loader built to make menu music great,<br>and the whole plugin nicer to live with.
 
-[Information on how to create, test, and upload a pack can be found here.](https://docs.deckthemes.com/#/AudioLoader/README)
+[![Release](https://img.shields.io/github/v/release/SuicideFromVenus/OverTone?style=for-the-badge&color=00f0ff&labelColor=0d0221)](https://github.com/SuicideFromVenus/OverTone/releases/latest)
+[![Decky Loader](https://img.shields.io/badge/Decky_Loader-plugin-ff2bd6?style=for-the-badge&labelColor=0d0221)](https://github.com/SteamDeckHomebrew/decky-loader)
+[![License](https://img.shields.io/badge/license-MIT-8a2be2?style=for-the-badge&labelColor=0d0221)](LICENSE)
 
-# Features
+[**Features**](#-music-upgraded) · [**Install**](#-installation) · [**Your music**](#-bring-your-own-music) · [**Build**](#-building) · [**Config**](#-configuration) · [**Support**](#-support--credits)
 
-## Sound packs
-- Replace Steam UI sound effects with the sounds from any installed sound pack.
-- Separate volume slider for UI sounds.
-- **Random Sound Pack on Launch**: picks a different installed sound pack every time Steam starts.
+</div>
 
-## Music
+---
 
-- Pick a music pack from the **Music Pack** dropdown.
-- If the pack maps several songs to `menu_music`, a **Song** dropdown lets you pick a specific one. See [Adding your own music](#adding-your-own-music) to use your own songs.
-- Packs with an `intro_music` file play the intro before the first song.
-- Music pauses while a game is running and resumes when it closes (unless you paused it yourself).
-- Music only plays in Big Picture / Gaming Mode. It pauses while Steam is open in the desktop UI and resumes when you return.
-- Separate volume slider for music.
+## ✨ Why OverTone exists
 
-### Music player
-- **Previous / Play-Pause / Next** buttons with a now-playing line.
-- **Skip** moves through every song of every installed music pack, ordered by pack name, and wraps around at the ends.
-- **Previous** restarts the current song if it has been playing for more than 3 seconds, otherwise goes back to the last song (in shuffle mode, the last song actually played).
-- **Shuffle** plays every song once per cycle in random order and never repeats the same song back to back.
-- **Repeat** has three modes, cycled by the button:
+OverTone is a [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) plugin that swaps Steam's UI sounds for custom packs and plays music in the menus. It's a fork of [Audio Loader](https://github.com/DeckThemes/SDH-AudioLoader) with two goals: **a better music experience**, and **a pile of quality-of-life improvements** that make everything feel cleaner day to day.
 
-  | Mode | Button | Behavior |
-  |---|---|---|
-  | Off | plain | Stops after the last song in the queue (or the end of a shuffle cycle) |
-  | All | blue | Continues through the queue and starts over when it ends |
-  | One | blue, with a large "1" | Loops the current song (the default, and how Audio Loader has always behaved) |
+> [!NOTE]
+> None of this exists without **EMERALD0874** and **Beebles**, who made the original plugin, the pack format and the Pack Manager. OverTone stays compatible with Audio Loader packs, and your packs and settings in `~/homebrew/sounds` are read as-is.
 
-- **Random Music on Launch**: starts a random song from all installed music packs every time Steam starts.
-- A missing intro or a broken song file is skipped instead of stopping playback.
+## 🎵 Music, upgraded
 
-### Remembered settings
-Everything is saved to `config.json` and restored on the next boot: selected sound pack, selected music pack and song, both volumes, shuffle, repeat mode, and both random-on-launch toggles.
+Menu music is one of the best little touches in Gaming Mode, so it should feel like a real player instead of a looping track.
 
-## Pack Manager
-Browse, install, star and uninstall packs from the Pack Manager (**Manage Packs** in the Quick Access Menu). Log in with a DeckThemes account key to see starred packs and submissions.
+| | |
+|---|---|
+| ⏯️ **Full controls** | Previous / play-pause / next, a now-playing line, shuffle and repeat |
+| 📚 **A real queue** | Every song from every installed music pack, in order or shuffled |
+| 🎚️ **Pick your song** | Multi-song packs get a **Song** dropdown, and packs with an intro play it first |
+| 🎮 **Plays where it should** | Stays in Gaming Mode: pauses in the desktop UI and while a game runs |
+| 🔁 **Repeat your way** | **One** (default) loops the current song, **Off** plays through the queue and wraps to the start |
 
-# Installation
+## 🛠️ Quality of life
 
-1. Install the [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader).
-1. Use the bundled Plugin Store to download Audio Loader.
+The small stuff that makes it feel polished.
 
-# Adding your own music
+| | |
+|---|---|
+| 🌫️ **Smooth fades** | Music fades out and in when a game launches or closes, and when Steam switches between the desktop UI and Gaming Mode. Nothing fades at plugin load or when you skip |
+| 😴 **Resumes after sleep** | No reaching for play after waking the device (unless you paused it yourself) |
+| 💾 **Remembers everything** | Packs, song, both volumes, shuffle, repeat and launch toggles come back on boot |
+| 🎲 **Fresh each boot** | Optional **Random Sound Pack on Launch** and **Random Music on Launch** |
+| 🎼 **Wide format support** | mp3, ogg, oga, opus, wav, flac, m4a, aac, webm, weba |
+| 🩹 **Fails gracefully** | A missing intro or broken file is skipped instead of stopping playback |
 
-You can add your own songs without publishing anything: a music pack is just a folder with a `pack.json` and your audio files.
+## 🔌 Staying compatible with Audio Loader
 
-## Supported file types
+OverTone keeps the pack format and the Pack Manager, so you can browse, install, star and uninstall packs from the Audio Loader pack store like before.
 
-Audio Loader recognizes these extensions (case-insensitive):
+> [!IMPORTANT]
+> As of Audio Loader v1.6.0, DeckThemes keeps existing music packs but no longer accepts new music submissions. For more songs, [bring your own](#-bring-your-own-music).
 
-`.mp3` `.ogg` `.oga` `.opus` `.wav` `.flac` `.m4a` `.aac` `.webm` `.weba`
+In [v1.6.0](https://github.com/DeckThemes/SDH-AudioLoader/releases/tag/v1.6.0), Audio Loader's maintainers made music a legacy feature and welcomed anyone who wanted to take it forward. OverTone picks up from there:
 
-Steam plays the files with its built-in Chromium audio engine, so anything Chromium can decode should work. **`.mp3` and `.ogg` are the safest choices.** If a file in another format won't play, convert it (for example `ffmpeg -i song.flac song.mp3`).
+- **Desktop UI:** music keeps playing there in Audio Loader, a known issue ([#58](https://github.com/DeckThemes/SDH-AudioLoader/issues/58)). OverTone follows Steam's UI mode and fades out instead.
+- **Sleep:** music stays paused after waking in Audio Loader. OverTone resumes it.
+- **Player:** Audio Loader loops a single menu track. OverTone adds the queue, shuffle, repeat and per-song selection.
 
-## Step by step
+## 📦 Installation
 
-These steps work the same on a regular Linux machine and on a Steam Deck. The only difference is how you open a terminal:
+OverTone will most likely never be on the Decky Plugin Store, which is a bit of a shame. The good news is it's easy to install without it. The newest built version is always on the [**Releases page**](https://github.com/SuicideFromVenus/OverTone/releases/latest), and Decky's developer menu can install it straight from there.
 
-- **Regular Linux:** open any terminal.
-- **Steam Deck:** switch to **Desktop Mode** and open **Konsole**. If you have never used `sudo` on your Deck, set a password first by running `passwd`.
+**Install via Decky's developer menu**
 
-Decky runs as root and owns `~/homebrew`, so the commands below use `sudo`.
+1. Open the [latest release](https://github.com/SuicideFromVenus/OverTone/releases/latest) and copy the link to the OverTone `.zip` (right-click it and copy the link address).
+2. On your device, press the `...` (Quick Access) button, open the Decky tab, then the settings (gear) icon.
+3. Under **General**, turn on **Developer mode**. A **Developer** tab appears.
+4. Open the **Developer** tab and choose **Install Plugin from URL**.
+5. Paste the zip link into the URL field and confirm. Decky downloads the plugin and reloads.
 
-1. **Make a folder** for your pack inside `~/homebrew/sounds`. The folder name is up to you:
-   ```bash
-   sudo mkdir -p ~/homebrew/sounds/MyMusic
-   ```
-2. **Copy your songs** directly into that folder. Subfolders are not scanned.
-   ```bash
-   sudo cp ~/Music/*.mp3 ~/homebrew/sounds/MyMusic/
-   ```
-   On a Steam Deck, music on an SD card is usually under `/run/media/`, for example `sudo cp /run/media/*/Music/*.mp3 ~/homebrew/sounds/MyMusic/`.
-3. **Create `pack.json`** in the same folder (see the examples below). For a single song:
-   ```bash
-   sudo tee ~/homebrew/sounds/MyMusic/pack.json > /dev/null <<'EOF'
-   {
-     "name": "My Music",
-     "author": "You",
-     "version": "v1.0",
-     "music": true
-   }
-   EOF
-   ```
-   (For this single-song form, the song must be named `menu_music` plus an extension, for example `menu_music.mp3`.)
-4. **Reload the pack list.** Open the plugin's **Music Pack** dropdown (it rescans every time it opens), or restart Decky with `sudo systemctl restart plugin_loader`.
-5. **Select your pack.** Pick your pack in the **Music Pack** dropdown. On a Steam Deck, go back to Gaming Mode first, since the plugin's Quick Access Menu panel is only there.
+> [!TIP]
+> Already downloaded the zip? The same tab also has **Install Plugin from ZIP file**. Menu names can differ a little between Decky versions.
 
-## `pack.json` for a single song
+> [!WARNING]
+> **Coming from Audio Loader?** Uninstall it first (or delete its folder in `~/homebrew/plugins/`, usually `Audio Loader` or `SDH-AudioLoader`), because two plugins patching the same sounds conflict. Your packs and settings are kept.
 
-Name the file `menu_music` plus any supported extension (for example `menu_music.mp3`):
+Prefer to build it yourself? See [Building](#-building).
+
+## 🎼 Bring your own music
+
+A music pack is just a folder with a `pack.json` and your audio files. On a Steam Deck, use Konsole in Desktop Mode (run `passwd` first if you've never used `sudo`).
+
+1. Make a folder: `sudo mkdir -p ~/homebrew/sounds/MyMusic`
+2. Copy your songs into it (subfolders aren't scanned).
+3. Add a `pack.json` (examples below).
+4. Open the **Music Pack** dropdown (it rescans each time) and pick your pack. On a Deck, do this in Gaming Mode.
+
+<details>
+<summary><b>📄 pack.json examples</b></summary>
+
+<br>
+
+**Single song:** name the file `menu_music` plus an extension (for example `menu_music.mp3`):
 
 ```json
-{
-  "name": "My Music",
-  "author": "You",
-  "version": "v1.0",
-  "music": true
-}
+{ "name": "My Music", "author": "You", "version": "v1.0", "music": true }
 ```
 
-## `pack.json` for several songs
-
-List every song in the `menu_music.mp3` mapping. The file names must match your files exactly, including the extension and capitalization:
+**Several songs:** map them under `menu_music.mp3`. File names must match exactly, and formats can be mixed:
 
 ```json
 {
@@ -125,138 +115,92 @@ List every song in the `menu_music.mp3` mapping. The file names must match your 
 }
 ```
 
-Each listed file appears in the **Song** dropdown and in the player queue, so skip, shuffle, and repeat all work across them. Formats can be mixed freely.
+An optional `intro_music.<ext>` plays once before the pack's first song.
 
-## Intro (optional)
+</details>
 
-Add a file named `intro_music` plus a supported extension (for example `intro_music.mp3`) and it plays once before the pack's first song whenever the pack is started, or when skip moves into this pack from another one.
+<details>
+<summary><b>⚠️ Gotchas</b></summary>
 
-## Rules and gotchas
+<br>
 
-- **Only mapped songs are queued.** Extra audio files in the folder that aren't listed in the `menu_music.mp3` mapping are ignored. (With no mapping at all, only the single `menu_music` file is used. If you have several `menu_music.*` files, the `.mp3` is preferred.)
-- **`name` is required and must be unique.** A pack whose `name` matches an already loaded pack is skipped, and a pack with no `pack.json`, or with invalid JSON, is not loaded. Check the log if a pack doesn't show up (`journalctl -u plugin_loader -f`).
-- **`"music": true` is required**, otherwise the pack is treated as a sound-effects pack and won't appear under **Music Pack**.
-- **File names are case-sensitive** on Linux: `Song.MP3` in the mapping will not find `song.mp3`.
-- **Avoid `#`, `?` and `%` in file names.** They break the URL the player uses. Spaces and normal punctuation are fine.
-- **Keep the folder under `~/homebrew/sounds`.** Steam reaches it through a symlink the plugin creates, so a pack stored anywhere else won't play.
-- To remove a pack, use the **Uninstall** tab in the Pack Manager, or delete its folder.
+- Only mapped songs are queued. `name` must be unique, and `"music": true` is required.
+- File names are case-sensitive. Avoid `#`, `?` and `%` in them.
+- Keep the folder under `~/homebrew/sounds`, since Steam reaches it through a symlink.
+- If a pack doesn't show up, check the log: `journalctl -u plugin_loader -f`.
+- To remove a pack, use the **Uninstall** tab or delete its folder.
 
-# Manual build
+</details>
 
-Everything below applies to the plugin on its own: you build `dist/index.js` once, then copy a handful of files into Decky's plugin folder.
+More on creating packs: [DeckThemes docs](https://docs.deckthemes.com/#/AudioLoader/README).
 
-### Requirements
-- [Git](https://git-scm.com/)
-- [Node.js](https://nodejs.org/) 18 or newer
-- [pnpm](https://pnpm.io/) (`npm install -g pnpm`, or `corepack enable`)
-- A working [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) install to test on
-- Optional: `zip`, to package the result
+## 🧱 Building
 
-### Build
+<details>
+<summary><b>Build and install from source</b></summary>
+
+<br>
+
+You need Git, Node.js 18+, pnpm and a Decky install to test on.
+
 ```bash
-git clone https://github.com/EMERALD0874/SDH-AudioLoader.git
-cd SDH-AudioLoader
+git clone https://github.com/SuicideFromVenus/OverTone.git
+cd OverTone
 pnpm install --frozen-lockfile
 pnpm run build
 ```
 
-This wipes `dist/` and regenerates `dist/index.js` from `src/`. A successful build ends with `created dist/index.js`. The warning about `output.name` is harmless.
+Use pnpm with the lockfile rather than `npm install`, which pulls a newer `@types/node` that breaks the type check. `pnpm run watch` rebuilds as you edit.
 
-Use `pnpm run watch` to rebuild automatically while you edit.
-
-> Use pnpm with the lockfile rather than `npm install`. A plain `npm install` pulls a newer `@types/node` that the project's TypeScript version can't parse, which fills the output with `ffi.d.ts` errors (the bundle is still produced).
-
-### What gets installed
-The plugin only needs these files at runtime: `main.py`, `plugin.json`, `package.json`, `audio_utils.py`, `audio_remoteinstall.py` and the `dist/` folder. They go in a folder under `~/homebrew/plugins/`.
-
-Your packs and settings live in `~/homebrew/sounds` (including `config.json`), outside the plugin folder, so reinstalling or updating the plugin does not touch them.
-
-### Install on regular Linux
-Run this from the repo, on the machine where Decky is installed:
+The plugin needs `main.py`, `plugin.json`, `package.json`, `audio_utils.py`, `audio_remoteinstall.py` and `dist/` in `~/homebrew/plugins/OverTone`:
 
 ```bash
-DEST=~/homebrew/plugins/SDH-AudioLoader
+DEST=~/homebrew/plugins/OverTone
 sudo mkdir -p "$DEST"
 sudo cp -r main.py plugin.json package.json audio_utils.py audio_remoteinstall.py dist "$DEST/"
 sudo systemctl restart plugin_loader
 ```
 
-If you already installed Audio Loader from the Plugin Store, its folder may be named `Audio Loader` instead. Set `DEST=~/homebrew/plugins/"Audio Loader"` to replace that install instead of creating a second copy.
+On a Steam Deck, do this from Konsole in Desktop Mode. SteamOS's system partition is read-only, so install Node with [nvm](https://github.com/nvm-sh/nvm), or build on a PC and `scp` the files to the Deck's home folder, then `sudo cp` them into place. If the plugin looks unchanged, restart Big Picture or reboot.
 
-If the plugin looks unchanged afterward, close and reopen Big Picture (or restart Steam) so the UI reloads the new bundle.
+**Making a release zip:** copy those files plus `README.md` and `LICENSE` into an `OverTone/` folder and zip it.
 
-### Install on a Steam Deck
-Switch to **Desktop Mode** and open **Konsole**. If you have never used `sudo` on your Deck, set a password first by running `passwd`. You can build in either of two ways.
+</details>
 
-**Option A: build on the Deck.** SteamOS has a read-only system partition, so install Node.js into your home folder with [nvm](https://github.com/nvm-sh/nvm) instead of using `pacman`:
+## ⚙️ Configuration
 
-```bash
-# after installing nvm, in a new terminal:
-nvm install 20
-npm install -g pnpm
-```
+<details>
+<summary><b>config.json reference</b></summary>
 
-Then clone, build, and install with the same commands as on regular Linux (see above). When you are done, return to Gaming Mode. If the plugin doesn't pick up the new version, reboot the Deck.
+<br>
 
-**Option B: build on another computer, then copy to the Deck.** Build on your PC as shown above, then on the Deck enable SSH (this needs the password from `passwd`):
-
-```bash
-sudo systemctl enable --now sshd
-```
-
-From your PC, copy the files to the Deck's home folder, then install them with `sudo` over SSH:
-
-```bash
-ssh deck@steamdeck 'mkdir -p ~/audioloader-build'
-scp -r main.py plugin.json package.json audio_utils.py audio_remoteinstall.py dist deck@steamdeck:~/audioloader-build/
-ssh -t deck@steamdeck 'sudo mkdir -p ~/homebrew/plugins/SDH-AudioLoader && sudo cp -r ~/audioloader-build/* ~/homebrew/plugins/SDH-AudioLoader/ && sudo systemctl restart plugin_loader'
-```
-
-Replace `steamdeck` with your Deck's hostname or IP address. (`scp` can't write to `~/homebrew` directly because Decky owns it, which is why the files go through the home folder first.)
-
-### Package as a zip
-```bash
-pnpm run build
-mkdir -p /tmp/SDH-AudioLoader
-cp -r main.py plugin.json package.json audio_utils.py audio_remoteinstall.py README.md LICENSE dist /tmp/SDH-AudioLoader/
-(cd /tmp && zip -r ~/SDH-AudioLoader.zip SDH-AudioLoader)
-rm -rf /tmp/SDH-AudioLoader
-```
-
-To install from the zip, unzip it into `~/homebrew/plugins/` (use `sudo`) and restart Decky.
-
-### Debugging
-Follow Decky's log while the plugin loads:
-
-```bash
-journalctl -u plugin_loader -f
-```
-
-# Configuration reference
-
-Settings are stored in `~/homebrew/sounds/config.json`. They are normally changed from the UI, but can be edited by hand while Steam is closed. Missing keys fall back to their defaults.
+Settings live in `~/homebrew/sounds/config.json`. They're normally changed from the UI, and missing keys use their defaults.
 
 | Key | Default | Description |
 |---|---|---|
 | `selected_pack` | `"Default"` | Active sound pack |
 | `selected_music` | `"None"` | Active music pack |
-| `selected_track` | `""` | Last played song file within the music pack |
+| `selected_track` | `""` | Last played song file |
 | `sound_volume` | `1` | UI sound volume (0 to 1) |
 | `music_volume` | `0.5` | Music volume (0 to 1) |
 | `music_shuffle` | `false` | Shuffle on or off |
-| `music_repeat` | `"one"` | `"off"`, `"all"` or `"one"` |
-| `random_sound_on_launch` | `false` | Pick a random sound pack at launch |
-| `random_music_on_launch` | `false` | Pick a random song at launch |
+| `music_repeat` | `"one"` | `"one"` or `"off"` (an old `"all"` reads as `"off"`) |
+| `random_sound_on_launch` | `false` | Random sound pack at launch |
+| `random_music_on_launch` | `false` | Random song at launch |
 
-# Project layout
+The fade lengths are `FADE_OUT_MS` and `FADE_IN_MS` at the top of `src/audioPlayers/musicPlayer.ts`.
 
-| Path | Purpose |
-|---|---|
-| `main.py` | Decky backend: finds packs, reads and writes `config.json` |
-| `audio_utils.py`, `audio_remoteinstall.py` | Backend helpers and pack installation |
-| `src/index.tsx` | Plugin entry point, Quick Access Menu UI, launch behavior |
-| `src/audioPlayers/musicPlayer.ts` | Music player: queue, shuffle, repeat, intros |
-| `src/config.ts` | Builds and saves the full config from current state |
-| `src/state/GlobalState.tsx` | Shared state for the UI and player |
-| `src/pack-manager/` | Pack Manager pages |
-| `dist/index.js` | Built bundle that Decky loads |
+</details>
+
+## 💬 Support & credits
+
+Found a bug, or have an idea? [Open an issue](https://github.com/SuicideFromVenus/OverTone/issues). OverTone is an unofficial fork and isn't supported by DeckThemes or the Audio Loader maintainers, so please keep the bug reports with me and spare them the pings.
+
+<div align="center">
+
+---
+
+Developed by **MurderFromMars / SuicideFromVenus**, building on the work of **EMERALD0874** and **Beebles**.<br>
+Licensed under MIT, with the original copyright notices kept.
+
+</div>
