@@ -1,7 +1,7 @@
 {
-  "name": "SDH-AudioLoader",
+  "name": "OverTone",
   "version": "1.6.1",
-  "description": "Replaces and adds Steam Deck game UI sounds",
+  "description": "Replaces Steam UI sounds and adds a music player to Steam's menus",
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",
     "watch": "rollup -c -w",
@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/EMERALD0874/SDH-AudioLoader.git"
+    "url": "git+https://github.com/SuicideFromVenus/OverTone.git"
   },
   "keywords": [
     "decky",
@@ -17,12 +17,12 @@
     "steam-deck",
     "deck"
   ],
-  "author": "EMERALD0874",
-  "license": "GPL-2.0-or-later",
+  "author": "SuicideFromVenus",
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/EMERALD0874/SDH-AudioLoader/issues"
+    "url": "https://github.com/SuicideFromVenus/OverTone/issues"
   },
-  "homepage": "https://github.com/EMERALD0874/SDH-AudioLoader#readme",
+  "homepage": "https://github.com/SuicideFromVenus/OverTone#readme",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^21.1.0",
     "@rollup/plugin-json": "^4.1.0",
