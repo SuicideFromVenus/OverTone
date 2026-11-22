@@ -5,15 +5,12 @@ import { GlobalState } from "../state/GlobalState";
 
 let gs: GlobalState | null = null;
 
-// Which part of a track is playing. Packs can have an intro that plays before the first song.
 let phase: "intro" | "main" = "main";
-// True when the user pressed pause themselves, so closing a game doesn't override it
 let userPaused = false;
-// Shuffle bookkeeping: tracks not yet played this cycle (null = cycle not started), and what was played
+// bag: songs not yet played this shuffle cycle (null = not started)
 let bag: string[] | null = null;
 let history: string[] = [];
 let errorStreak = 0;
-// False while Steam is only open in its desktop UI (not Big Picture / Gaming Mode)
 let gamepadUI = true;
 
 // True when WE paused the music (game launch, desktop UI switch), so the next resume should fade in.
@@ -24,11 +21,10 @@ let fadeTimer: number | null = null;
 const HISTORY_LIMIT = 50;
 const RESTART_THRESHOLD_SECONDS = 3;
 const RETRY_DELAY_MS = 2000;
-const FADE_OUT_MS = 500;
-const FADE_IN_MS = 800;
+const FADE_MS = 1500;
 const FADE_STEP_MS = 25;
-// A timer gap this long means the device was asleep (fallback for when Steam's resume event isn't available)
-const SLEEP_GAP_MS = 20000;
+// A clock jump this big means the device slept (fallback if Steam's resume event is missing)
+const SLEEP_GAP_MS = 10000;
 const WAKE_RETRY_LIMIT = 6;
 
 export function initMusicPlayer(state: GlobalState) {
@@ -41,8 +37,6 @@ const keyOf = (t: Track) => `${t.pack}::${t.file}`;
 const audioEl = (): HTMLAudioElement | null => st().menuMusic;
 const canPlay = () => gamepadUI && st().gamesRunning.length === 0;
 
-// ---------------------------------------------------------------- fading
-
 function cancelFade() {
   if (fadeTimer !== null) {
     clearInterval(fadeTimer);
@@ -50,17 +44,16 @@ function cancelFade() {
   }
 }
 
-// Ramps the element between silent (0) and the user's music volume (1) over `ms`.
-// Works from wherever the volume currently is, so reversing a fade mid-way is smooth.
+// Level is squared so the fade sounds even; fading out and in mirror each other.
 function fadeTo(a: HTMLAudioElement, target: 0 | 1, ms: number, done?: () => void) {
   cancelFade();
   const vol = () => st().musicVolume;
-  const startLevel = vol() > 0 ? Math.min(1, a.volume / vol()) : target;
+  const startLevel = vol() > 0 ? Math.sqrt(Math.min(1, a.volume / vol())) : target;
   const t0 = performance.now();
   fadeTimer = window.setInterval(() => {
     const p = Math.min(1, (performance.now() - t0) / ms);
-    // musicVolume is re-read each step, so moving the slider during a fade still works
-    a.volume = Math.max(0, Math.min(1, vol() * (startLevel + (target - startLevel) * p)));
+    const level = startLevel + (target - startLevel) * p;
+    a.volume = Math.max(0, Math.min(1, vol() * level * level));
     if (p >= 1) {
       cancelFade();
       done?.();
@@ -71,33 +64,31 @@ function fadeTo(a: HTMLAudioElement, target: 0 | 1, ms: number, done?: () => voi
 function fadeOutAndPause(a: HTMLAudioElement) {
   if (a.paused) return;
   suspendedByUs = true;
-  fadeTo(a, 0, FADE_OUT_MS, () => {
+  fadeTo(a, 0, FADE_MS, () => {
     a.pause();
-    a.volume = st().musicVolume; // restore, so a manual play later isn't silent
+    a.volume = st().musicVolume;
   });
 }
 
 function fadeInAndPlay(a: HTMLAudioElement): Promise<void> {
   suspendedByUs = false;
   if (!a.paused) {
-    // Still mid fade-out: just turn it back up
-    fadeTo(a, 1, FADE_IN_MS);
+    fadeTo(a, 1, FADE_MS);
     return Promise.resolve();
   }
   cancelFade();
   a.volume = 0;
   return a
-  .play()
-  .then(() => {
-    if (audioEl() === a) fadeTo(a, 1, FADE_IN_MS);
-  })
-  .catch((e) => {
-    a.volume = st().musicVolume;
-    throw e;
-  });
+    .play()
+    .then(() => {
+      if (audioEl() === a) fadeTo(a, 1, FADE_MS);
+    })
+    .catch((e) => {
+      a.volume = st().musicVolume;
+      throw e;
+    });
 }
 
-// Resumes after a game closed / Gaming Mode returned. Fades in only if we were the ones who paused it.
 function resumeMusic() {
   const a = audioEl();
   if (!a || userPaused || !canPlay()) return;
@@ -105,7 +96,6 @@ function resumeMusic() {
   else if (a.paused) a.play().catch(() => {});
 }
 
-// Fades the music out while Steam is in the desktop UI and back in when Big Picture / Gaming Mode returns
 export function setGamepadUI(active: boolean) {
   gamepadUI = active;
   const a = audioEl();
@@ -114,9 +104,6 @@ export function setGamepadUI(active: boolean) {
   else resumeMusic();
 }
 
-// After the device wakes from sleep the audio element is left paused and nothing restarts it.
-// Starts it again (unless the user paused it themselves or a game is running), retrying a few
-// times in case the audio device isn't ready yet.
 export function resumeAfterSleep() {
   let tries = 0;
   const attempt = () => {
@@ -130,13 +117,11 @@ export function resumeAfterSleep() {
   setTimeout(attempt, 500);
 }
 
-// Listens for wake-from-sleep. Returns a function that stops listening.
 export function watchForSleep(): () => void {
   // System isn't in our SteamClient typings, hence the any
   const reg = (SteamClient as any).System?.RegisterForOnResumeFromSuspend?.(() => resumeAfterSleep()) as
-  | RegisteredEvent
-  | undefined;
-  // Fallback: timers freeze while asleep, so a big jump in the clock means we just woke up
+    | RegisteredEvent
+    | undefined;
   let last = Date.now();
   const timer = window.setInterval(() => {
     const now = Date.now();
@@ -149,9 +134,6 @@ export function watchForSleep(): () => void {
   };
 }
 
-// ---------------------------------------------------------------- queue
-
-// A pack's songs: whatever its menu_music mapping lists, otherwise its single menu_music file.
 export function getPackTracks(pack: Pack): Track[] {
   const mapped = findMappedFiles(pack, "menu_music.mp3");
   let files: string[];
@@ -174,7 +156,6 @@ export function getPackTracks(pack: Pack): Track[] {
   }));
 }
 
-// The player queue is every song of every installed music pack, ordered by pack name.
 export function getQueue(): Track[] {
   return st()
   .soundPacks.filter((p) => p.music)
@@ -194,8 +175,6 @@ function shuffled<T>(items: T[]): T[] {
   }
   return a;
 }
-
-// ---------------------------------------------------------------- playback core
 
 function disposeAudio() {
   cancelFade();
@@ -264,7 +243,6 @@ function playTrack(track: Track, withIntro: boolean) {
   a.onerror = () => {
     console.warn("OverTone: could not play", a.src);
     if (phase === "intro") {
-      // A missing intro shouldn't stop the song itself from playing
       startMainPhase(a, mainSrc);
       return;
     }
@@ -276,10 +254,9 @@ function playTrack(track: Track, withIntro: boolean) {
         a.load();
         if (canPlay()) a.play().catch((e) => console.warn("OverTone: play() rejected", e));
       }, RETRY_DELAY_MS);
-        return;
+      return;
     }
     errorStreak++;
-    // Skip a broken song, but give up once every song in a row has failed
     if (errorStreak < getQueue().length) {
       const next = pickNext();
       if (next) {
@@ -293,11 +270,9 @@ function playTrack(track: Track, withIntro: boolean) {
   set("menuMusic", a);
   exposeWindowObject(a);
 
-  // While a game is running the music stays loaded but paused; resumeAfterGame() starts it.
   if (canPlay()) {
     a.play().catch((e) => console.warn("OverTone: play() rejected", e));
   } else {
-    // Loaded while a game runs / desktop UI: fade in when it's finally allowed to play
     suspendedByUs = true;
   }
 }
@@ -311,7 +286,6 @@ function startMainPhase(a: HTMLAudioElement, mainSrc: string) {
 
 const packChanged = (next: Track) => st().currentTrack?.pack !== next.pack;
 
-// Picks the track that follows the current one. The queue always wraps around.
 function pickNext(): Track | null {
   const queue = getQueue();
   if (queue.length === 0) return null;
@@ -325,7 +299,6 @@ function pickNext(): Track | null {
     if (bag !== null) bag = bag.filter((k) => valid.has(k));
 
     if (bag === null || bag.length === 0) {
-      // Cycle finished (or none yet): reshuffle, avoiding an immediate repeat of the current song
       const others = queue.map(keyOf).filter((k) => k !== curKey);
       bag = shuffled(others.length > 0 ? others : queue.map(keyOf));
     }
@@ -351,7 +324,6 @@ function handleEnded() {
   }
   const next = pickNext();
   if (!next) {
-    // Empty queue
     set("musicPlaying", false);
     return;
   }
@@ -368,9 +340,6 @@ function rememberCurrent() {
 
 const musicActive = () => st().selectedMusic !== "None";
 
-// ---------------------------------------------------------------- public controls
-
-// Starts a pack from the top (intro first), or from a specific song in it.
 export function startPack(packName: string, trackFile?: string) {
   if (packName === "None") {
     stopMusic();
@@ -391,13 +360,11 @@ export function startPack(packName: string, trackFile?: string) {
   playTrack(track, true);
 }
 
-// Resumes whatever pack/song is saved in settings (used at boot)
 export function startCurrent() {
   if (!musicActive()) return;
   startPack(st().selectedMusic, st().selectedTrack);
 }
 
-// Starts a random song from every installed music pack
 export function startRandomMusic() {
   const queue = getQueue();
   if (queue.length === 0) return;
@@ -406,7 +373,6 @@ export function startRandomMusic() {
   playTrack(queue[Math.floor(Math.random() * queue.length)], true);
 }
 
-// Stops playback but keeps the saved selection
 export function stopMusic() {
   disposeAudio();
   set("currentTrack", null);
@@ -424,7 +390,6 @@ export function nextTrack() {
 export function previousTrack() {
   if (!musicActive()) return;
   const a = audioEl();
-  // Like most players: if the song has been playing a while, restart it instead of going back
   if (a && a.currentTime > RESTART_THRESHOLD_SECONDS) {
     a.currentTime = 0;
     return;
@@ -455,13 +420,12 @@ export function togglePlayPause() {
   if (!musicActive()) return;
   const a = audioEl();
   if (!a) {
-    // Nothing loaded (e.g. the queue ended): start from the saved selection
     startCurrent();
     return;
   }
   cancelFade();
   suspendedByUs = false;
-  a.volume = st().musicVolume; // in case a fade was interrupted
+  a.volume = st().musicVolume;
   if (a.paused) {
     userPaused = false;
     if (canPlay()) a.play().catch(() => {});
@@ -491,7 +455,6 @@ export function toggleRepeat() {
 export function setMusicVolume(value: number) {
   set("musicVolume", value);
   const a = audioEl();
-  // During a fade the fade itself follows musicVolume, so don't fight it
   if (a && fadeTimer === null) a.volume = value;
   saveConfig();
 }
